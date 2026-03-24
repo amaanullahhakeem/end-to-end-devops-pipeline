@@ -22,3 +22,25 @@ jobs:
 
       - name: Push Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/project1
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      # ✅ Set kubeconfig (cluster access)
+      - name: Set up Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+
+      # ✅ Deploy to Kubernetes
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/project1-deployment \
+          project1-container=${{ secrets.DOCKER_USERNAME }}/project1:latest --record || \
+          kubectl apply -f k8s/
+
+      # ✅ Verify rollout
+      - name: Verify Deployment
+        run: kubectl rollout status deployment/project1-deployment
+        
